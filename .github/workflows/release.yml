@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Validate version and syntax
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="$(sed -n 's/^\/\/ @version[[:space:]]*//p' hanime1-hover-preview.user.js)"
+          test -n "$version"
+          test "v$version" = "$RELEASE_TAG"
+          node --check hanime1-hover-preview.user.js
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            hanime1-hover-preview.user.js \
+            --title "Hanime1 Hover Preview $RELEASE_TAG" \
+            --generate-notes
